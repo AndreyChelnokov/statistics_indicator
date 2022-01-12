@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>test - Андрей Челноков</title>
+
+    <link rel="stylesheet" href="./font/stylesheet.css">
+</head>
+<body>
+
+    <div class="fake-body">
+        <div class="statistics">
+            <div data-wrap class="statistics__wrapper"></div>
+        </div>
+    </div>
+
+<script>
+    const BASE_DATA = [
+        {
+            name: 'risk_of_loss',
+            title: 'Risk of Loss',
+            params: [
+                {
+                    name: 'low',
+                    value: 4
+                },
+                {
+                    name: 'average',
+                    value: 40
+                },
+                {
+                    name: 'high',
+                    value: 300
+                },
+                {
+                    name: 'not-rated',
+                    value: 56
+                }
+            ]
+        },
+        {
+            name: 'impact_of_loss',
+            title: 'Impact of Loss',
+            params: [
+                {
+                    name: 'low',
+                    value: 4
+                },
+                {
+                    name: 'average',
+                    value: 40
+                },
+                {
+                    name: 'high',
+                    value: 200
+                },
+                {
+                    name: 'not-rated',
+                    value: 156
+                }
+            ]
+        },
+        {
+            name: 'satisfaction',
+            title: 'Satisfaction',
+            params: [
+                {
+                    name: 'low',
+                    value: 50
+                },
+                {
+                    name: 'average',
+                    value: 300
+                },
+                {
+                    name: 'high',
+                    value: 50
+                }
+            ]
+        },
+        {
+            name: 'performance',
+            title: 'Performance',
+            params: [
+                {
+                    name: 'low',
+                    value: 394
+                },
+                {
+                    name: 'average',
+                    value: 3
+                },
+                {
+                    name: 'high',
+                    value: 2
+                },
+                {
+                    name: 'not-rated',
+                    value: 1
+                }
+            ]
+        }
+    ]
+
+    class Indicator {
+        constructor(props) {
+            this.title = props.title;
+            this.name = props.name;
+            this.params = props.params;
+            this.totalCount = this.calculateTotalCount();
+            this.onePercent = this.totalCount / 100;
+
+            this.wrapperItems = document.querySelector('[data-wrap]');
+
+            this.wrapperItems.append(this.createHTMLItem());
+
+            this.elementHTML = document.querySelector(`#${this.name}`);
+
+            this.elementHTML.querySelectorAll('[data-params]').forEach((paramHTML, index) => {
+                paramHTML.addEventListener('mouseenter', () => {
+                    this.elementHTML.classList.add(`transparent-to-all-but-${index + 1}`);
+
+                    this.wrapperItems.querySelectorAll('.statistics__item').forEach(item => {
+                        if (item.id == this.name) {
+                            item.style.opacity = '1';
+                        } else {
+                            item.style.opacity = '.3';
+                        }
+                    })
+                })
+                paramHTML.addEventListener('mouseleave', () => {
+                    this.elementHTML.classList.remove(`transparent-to-all-but-${index + 1}`);
+
+                    this.wrapperItems.querySelectorAll('.statistics__item').forEach(item => {
+                        item.style.opacity = '1';
+                    })
+                })
+            })
+        }
+
+        calculateTotalCount() {
+            return this.params.map(item => item.value).reduce(function(sum, arg) {
+                return sum + (parseInt(arg) || 0);
+            }, 0)
+        }
+
+        createHTMLItem() {
+            const newHTMLParams = this.params.map(paramData => {
+                return `<div data-params="${paramData.name}" class="indicator__item indicator__item_${paramData.name}"></div>`;
+            }).join('');
+
+            const indicator = `
+                <div id="${this.name}" class="statistics__item statistics-item">
+                    <div class="statistics-item__title">${this.title}</div>
+                    <div class="statistics-item__indicator indicator">
+                        ${newHTMLParams}
+                    </div>
+                </div>
+            `;
+
+            const newItem = document.createElement('div');
+            newItem.innerHTML = indicator;
+
+            return newItem;
+        }
+
+        counterWidthParams() {
+            const result = {};
+
+            this.params.forEach(param => {
+                result[param.name] = param.value / this.onePercent;
+            })
+
+            return result;
+        };
+
+        addWidthParams() {
+            const withDataItems = this.counterWidthParams();
+
+            this.params.forEach(param => {
+                const paramHTML = this.elementHTML.querySelector(`[data-params="${param.name}"]`)
+                paramHTML.style.maxWidth = `${withDataItems[param.name]}%`;
+            })
+        };
+
+        setContentParamsItem() {
+            const withDataItems = this.counterWidthParams();
+
+            this.params.forEach((param, index) => {
+                const paramHTML = this.elementHTML.querySelector(`[data-params="${param.name}"]`)
+                paramHTML.innerHTML = `
+                    <div class="indicator__item-top"><span>${param.name}</span> - ${Math.round(withDataItems[param.name])}%</div>
+                    <div class="indicator__item-bottom">${param.value} employees</div>
+                `;
+            })
+        }
+
+        addTextPosition() {
+            setTimeout(() => {
+                this.params.forEach(param => {
+                    const paramHTML = this.elementHTML.querySelector(`[data-params="${param.name}"]`);
+
+                    let topItemParam = paramHTML.querySelector('.indicator__item-top');
+                    let bottomItemParam = paramHTML.querySelector('.indicator__item-bottom');
+
+                    let topItemParamWidth = topItemParam.clientWidth;
+                    let bottomItemParamWidth = bottomItemParam.clientWidth;
+
+                    const widthParam = paramHTML.clientWidth;
+                    const textWidth = topItemParamWidth > bottomItemParamWidth ? topItemParamWidth : bottomItemParamWidth;
+
+                    topItemParam.style.left = '0px';
+                    bottomItemParam.style.left = '0px';
+
+                    if (widthParam <= textWidth) {
+                        console.log('paramHTML', paramHTML)
+                        console.log('paramHTML.offsetLeft', paramHTML.offsetLeft)
+                        if (paramHTML.offsetLeft >= widthParam / 2) {
+                            topItemParam.style.right = '0px';
+                            bottomItemParam.style.right = '0px';
+
+                            topItemParam.style.left = 'auto';
+                            bottomItemParam.style.left = 'auto';
+                        }
+                    }
+                })
+            }, 0)
+
+        }
+
+        init() {
+            this.addWidthParams();
+            this.setContentParamsItem();
+            this.addTextPosition();
+        };
+
+    }
+
+    BASE_DATA.forEach(item => {
+        new Indicator({
+            name: item.name,
+            title: item.title,
+            params: item.params
+        }).init()
+    })
+
+</script>
+
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+
+        font-family: 'Lab Grotesque', sans-serif;
+    }
+
+    .fake-body {
+        height: 100vh;
+        display: flex;
+        align-items: center;
+    }
+
+    .statistics {
+        padding: 22px 23px 22px 23px;
+        flex-grow: 1;
+        max-width: 830px;
+        margin: 0 auto;
+    }
+    .statistics__wrapper {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .statistics__wrapper > div {
+        width: calc(50% - 16px);
+    }
+    .statistics-item {
+        display: flex;
+        align-items: center;
+        padding: 10px 0;
+        box-sizing: border-box;
+        justify-content: space-between;
+        transition: .5s;
+    }
+    .indicator__item:not(:last-child) {
+        border-right: 1px solid #fff;
+    }
+    .statistics-item__title {
+        font-size: 16px;
+        line-height: 24px;
+        color: #1A1A1A;
+    }
+    .statistics-item__indicator{
+        margin-left: 19px;
+    }
+
+    .indicator {
+        display: flex;
+
+        width: 100%;
+        height: 6px;
+
+        max-width: 274px;
+
+        border-radius: 4px;
+
+        position: relative;
+
+        /*overflow: hidden;*/
+    }
+    .indicator__item {
+        position: relative;
+
+        flex-grow: 1;
+
+        width: 100%;
+
+        min-width: 8px;
+
+        transition: .5s;
+    }
+    .indicator__item:first-child {
+        border-top-left-radius: 4px;
+        border-bottom-left-radius: 4px;
+    }
+    .indicator__item:last-child {
+        border-top-right-radius: 4px;
+        border-bottom-right-radius: 4px;
+    }
+    .indicator__item_low {
+        background-color: #45E596;
+        color: #45E596;
+    }
+    .indicator__item_average {
+        background-color: #FFC44C;
+        color: #FFC44C;
+    }
+    .indicator__item_high {
+        background-color: #FF4C4C;
+        color: #FF4C4C;
+    }
+    .indicator__item_not-rated {
+        background-color: #F2F2F2;
+        color: #F2F2F2;
+    }
+    .indicator__item_not-rated:hover {
+        background-color: #808080;
+        color: #808080;
+    }
+
+    .indicator__item-top {
+        pointer-events: none;
+        position: absolute;
+        top: 6px;
+        font-weight: bold;
+        font-size: 14px;
+        line-height: 22px;
+        width: max-content;
+        text-transform: lowercase;
+        opacity: 0;
+
+        transition: .5s;
+    }
+    .indicator__item-top:first-letter {
+        text-transform: uppercase;
+    }
+    .indicator__item-bottom {
+        pointer-events: none;
+        font-size: 14px;
+        line-height: 22px;
+        color: #1A1A1A;
+        width: max-content;
+        position: absolute;
+        bottom: 6px;
+        opacity: 0;
+
+        transition: .5s;
+    }
+
+    .indicator__item:hover {
+        cursor: pointer;
+    }
+    .indicator__item:hover .indicator__item-top {
+        bottom: auto;
+        top: -25px;
+        opacity: 1;
+
+        transition: .5s;
+    }
+    .indicator__item:hover .indicator__item-bottom {
+        top: auto;
+        bottom: -27px;
+        opacity: 1;
+
+        transition: .5s;
+    }
+
+    .transparent-to-all-but-1 .indicator__item:nth-child(2),
+    .transparent-to-all-but-1 .indicator__item:nth-child(3),
+    .transparent-to-all-but-1 .indicator__item:nth-child(4){
+        opacity: .3;
+        transition: .5s;
+    }
+    .transparent-to-all-but-2 .indicator__item:nth-child(1),
+    .transparent-to-all-but-2 .indicator__item:nth-child(3),
+    .transparent-to-all-but-2 .indicator__item:nth-child(4){
+        opacity: .3;
+        transition: .5s;
+    }
+    .transparent-to-all-but-3 .indicator__item:nth-child(1),
+    .transparent-to-all-but-3 .indicator__item:nth-child(2),
+    .transparent-to-all-but-3 .indicator__item:nth-child(4){
+        opacity: .3;
+        transition: .5s;
+    }
+    .transparent-to-all-but-4 .indicator__item:nth-child(1),
+    .transparent-to-all-but-4 .indicator__item:nth-child(2),
+    .transparent-to-all-but-4 .indicator__item:nth-child(3){
+        opacity: .3;
+        transition: .5s;
+    }
+
+    @media(max-width: 850px) {
+        .statistics__wrapper {
+            flex-direction: column;
+        }
+        .statistics__wrapper > div {
+            width: 100%;
+        }
+        .statistics {
+            max-width: 400px;
+        }
+    }
+
+</style>
+
+</body>
+</html>
